@@ -259,6 +259,43 @@ export default {
               })
           })
       })
+    },
+
+    beforeOpenApprovalDialog () {
+      const privateKeys = Array.from({ length: this.accountQuorum - this.approvalDialogSignatures.length }, () => ({ hex: '' }))
+      this.$set(this.approvalForm, 'privateKeys', privateKeys)
+      this.updateNumberOfValidKeys()
+
+      this._refreshRules({
+        repeatingPrivateKey: { pattern: 'repeatingPrivateKey', keys: this.approvalDialogSignatures }
+      })
+    },
+
+    onFileChosen (file, fileList, key) {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        key.hex = (ev.target.result || '').trim()
+      }
+      reader.readAsText(file.raw)
+    },
+
+    updateNumberOfValidKeys () {
+      if (!this.$refs.approvalForm) return
+
+      this.approvalForm.numberOfValidKeys = this.$refs.approvalForm.fields.filter(x => {
+        return x.validateState === 'success' && !!x.fieldValue
+      }).length
+    },
+
+    disableConfig () {
+      if (this.exchangeDialogVisible) {
+        return !(this.approvalForm.numberOfValidKeys + this.approvalDialogSignatures.length === this.accountQuorum)
+      } else {
+        if (this.approvalDialogMinAmountKeys === 1) {
+          return this.approvalForm.numberOfValidKeys < 1
+        }
+        return !(this.approvalForm.numberOfValidKeys + this.approvalDialogSignatures.length === this.approvalDialogMinAmountKeys)
+      }
     }
   }
 }
